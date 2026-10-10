@@ -76,12 +76,15 @@ export function App(): ReactElement {
         <div className={styles.heroContent}>
           <p className={styles.productLabel}>P3 demonstration</p>
           <h1>PR Attention Router</h1>
-          <p className={styles.tagline}>Route attention first; automate later.</p>
-          <p className={styles.intro}>Direct human review toward the changes with the greatest probability,
+          <p className={styles.tagline}>Route by risk. Act with confidence.</p>
+          <p className={styles.intro}>Direct review attention toward the changes with the greatest probability,
             impact, difficulty of detection, and blast radius.</p>
         </div>
         <div className={styles.boundary}><span aria-hidden="true">●</span><div>
-          <strong>Human authority preserved</strong><p>All tiers require human review. Classification grants no approval, merge, deployment, or release authority.</p>
+          <strong>Human authority. Risk-informed decisions.</strong>
+          <p>Eligible LOW-risk changes may be merged by any authorized team member without separate review when policy authorizes and required protections pass. MEDIUM changes receive standard developer review. HIGH changes require Tech Lead or relevant SME review.</p>
+          <p>Classification is evidence. Merge authorization is a separate human policy decision.</p>
+          <p>LOW removes dedicated review attention; it does not perform the merge.</p>
         </div></div>
       </header>
       <main id="main">
@@ -103,7 +106,7 @@ export function App(): ReactElement {
             <p className={styles.freshness}>Read from GitHub at {new Date(queue.fetchedAt).toLocaleTimeString()}. Tier counts cover verified classifications for current commits in this view.</p>
             {queue.truncated && <p role="status">Showing the 20 most recently updated open PRs. <a href={`https://github.com/${repository}/pulls`}>View all on GitHub</a>.</p>}
             <section className={styles.tierSection} aria-labelledby="tiers-heading">
-              <div className={styles.sectionHeading}><div><p>Required human attention</p><h2 id="tiers-heading">Route by evidence, not instinct</h2></div>
+              <div className={styles.sectionHeading}><div><p>Intelligent review routing</p><h2 id="tiers-heading">Route by evidence, not instinct</h2></div>
                 <div className={styles.filterActions}>
                   {needsClassification.length > 0 && <button aria-label="Show pull requests needing classification" aria-pressed={filter === 'NEEDS_CLASSIFICATION'}
                     className={styles.showAllButton} type="button" onClick={() => { setFilter('NEEDS_CLASSIFICATION'); setSelected(null); }}>

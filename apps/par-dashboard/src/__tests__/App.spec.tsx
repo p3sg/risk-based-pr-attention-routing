@@ -27,6 +27,35 @@ function network(pulls = [pull(1, 'LOW'), pull(2, 'MEDIUM'), pull(3, 'HIGH')]) {
 }
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 describe('live dashboard', () => {
+  it('routes human attention without treating LOW classification as automatic merge', async () => {
+    network();
+    render(<App />);
+    await screen.findByRole('region', { name: 'Review queue' });
+
+    expect(screen.getByText('Route by risk. Act with confidence.')).toBeVisible();
+    expect(screen.getByText('Human authority. Risk-informed decisions.')).toBeVisible();
+    expect(screen.getByText(
+      'Eligible LOW-risk changes may be merged by any authorized team member without separate review when policy authorizes and required protections pass. MEDIUM changes receive standard developer review. HIGH changes require Tech Lead or relevant SME review.',
+    )).toBeVisible();
+    expect(screen.getByText(
+      'Classification is evidence. Merge authorization is a separate human policy decision.',
+    )).toBeVisible();
+    expect(screen.getByText(
+      'LOW removes dedicated review attention; it does not perform the merge.',
+    )).toBeVisible();
+    expect(screen.getByText('Intelligent review routing')).toBeVisible();
+
+    const lowCard = screen.getByRole('heading', { name: 'LOW' }).closest('article');
+    expect(lowCard).not.toBeNull();
+    expect(within(lowCard!).getByText('Team merge eligible')).toBeVisible();
+    expect(within(lowCard!).getByText(
+      'Any authorized team member may merge without separate review after required checks, repository protections, and policy authorization pass.',
+    )).toBeVisible();
+    expect(screen.getByText('Merge: Authorized team member')).toBeVisible();
+    expect(screen.queryByText(/auto-merge|automatically merged/iu)).not.toBeInTheDocument();
+    expect(screen.queryByText(/all tiers require human review/iu)).not.toBeInTheDocument();
+  });
+
   it('requires sign-in before retrieving private repositories', async () => {
     const requests: string[] = [];
     vi.stubGlobal('fetch', (input: string) => { requests.push(input); return Promise.resolve(Response.json({}, { status: 401 })); });

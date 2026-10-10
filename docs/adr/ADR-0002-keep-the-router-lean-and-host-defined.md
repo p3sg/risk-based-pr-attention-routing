@@ -27,7 +27,8 @@ classification problem requires.
   Uncertainty, missing or contradictory context, and deleted or weakened tests
   are AI evidence rather than separate coded signals.
 - LOW and MEDIUM map to a developer familiar with the affected area; HIGH maps
-  to a Tech Lead or relevant SME.
+  to a Tech Lead or relevant SME. This is classification evidence, not a merge
+  gate; the P3 V1+ host policy in ADR-0001 may waive separate LOW review.
 - Missing or invalid AI output falls back to the floor. Authority language
   withholds AI prose while retaining its valid tier.
 - The PR comment is canonical. Email and Slack send the same short summary on

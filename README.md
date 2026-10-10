@@ -2,8 +2,11 @@
 
 Route human attention toward consequential changes. Deterministic rules establish
 a minimum tier; AI applies the host's rubric and trusted engineering context and
-may raise that tier. LOW, MEDIUM and HIGH all require human review. Classification
-never grants approval, merge, deployment or release authority.
+may raise that tier. Under the P3 V1+ policy, an eligible LOW result needs no
+separate reviewer: any authorized team member may merge after required checks,
+repository protections and policy authorization pass. MEDIUM requires standard
+developer review; HIGH requires Tech Lead or relevant SME review. Classification
+never performs or independently authorizes a merge, deployment or release.
 
 ## Three independent pieces
 

@@ -13,7 +13,10 @@ The repository uses npm workspaces without a task-orchestration framework.
    reads the PR diff, rules, rubric and explicit engineering documents. Code sets
    the floor, AI may raise it, and code finalizes the tier. A trusted job uploads
    `classification.json` and updates the PR comment. Only first classification
-   and changed tiers notify. All tiers require human review.
+   and changed tiers notify. Under P3's V1+ host policy, eligible LOW changes need
+   no separate reviewer and an authorized team member performs the merge after
+   required protections pass. MEDIUM gets standard developer review; HIGH gets
+   Tech Lead or relevant SME review. The workflow itself never merges.
 2. An authenticated browser requests the private API. The API performs GETs to
    allowlisted GitHub repositories and returns PRs and validated publications.
    There is no model client, AI key, workflow dispatch or classification route.

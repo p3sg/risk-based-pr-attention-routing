@@ -5,7 +5,9 @@ Viewers adopt the router and workflow, **not** the dashboard or its Google login
 
 1. **Route attention.** Explain deterministic rules, contextual rubric and durable
    docs. Run package tests and inspect a floor/AI final result. A hypothetical
-   isolated wording change is LOW; it still requires a human reviewer.
+   isolated wording change is LOW; under P3's V1+ host policy it may need no
+   separate reviewer, but an authorized human still performs the merge after
+   required policy and protections pass.
 2. **Publish trustworthy evidence.** Walk the verification-triggered workflow,
    trusted policy vs untrusted diff, deterministic fallback, structured record and
    change-only notifications. Propose changing a shared queue contract (MEDIUM)
