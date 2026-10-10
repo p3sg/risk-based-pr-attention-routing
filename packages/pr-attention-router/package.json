@@ -45,7 +45,7 @@
     ".": { "types": "./dist/route.d.ts", "default": "./dist/route.js" },
     "./publication": { "types": "./dist/publication.d.ts", "default": "./dist/publication.js" }
   },
-  "bin": { "pr-attention-router": "./dist/route.js" },
+  "bin": { "pr-attention-router": "dist/route.js" },
   "engines": {
     "node": ">=24"
   },
