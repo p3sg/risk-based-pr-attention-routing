@@ -69,6 +69,10 @@ try {
   ), 'utf8'));
   const packageName = installedManifest.name;
   await check('scoped package name', () => assert.equal(packageName, '@p3sg/pr-attention-router'));
+  await check('normalized CLI metadata', () => assert.deepEqual(
+    JSON.parse(readFileSync(join(packageDir, 'package.json'), 'utf8')).bin,
+    { 'pr-attention-router': 'dist/route.js' },
+  ));
   await check('v1 release metadata', () => {
     assert.equal(installedManifest.version, '1.0.0');
     assert.equal(installedManifest.license, 'Apache-2.0');
