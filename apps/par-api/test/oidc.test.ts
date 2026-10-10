@@ -8,7 +8,7 @@ import { beginOwnerSetup, setupRedirect } from '../src/owner-setup.ts';
 const config = loadConfig({ PAR_ORIGIN: 'https://demo.example', PAR_REPOSITORIES: 'p3/reference', PAR_GITHUB_TOKEN: 'github-secret',
   PAR_SESSION_SECRET: 'b'.repeat(64), PAR_OIDC_ISSUER: 'https://accounts.google.com', PAR_OIDC_CLIENT_ID: 'p3-client',
   PAR_OIDC_CLIENT_SECRET: 'oauth-secret', PAR_OIDC_SUBJECT: 'owner-123' });
-async function setup(overrides: Record<string, unknown> = {}) {
+async function setup(overrides: Record<string, unknown> = {}, forged = false) {
   const { privateKey, publicKey } = await generateKeyPair('RS256');
   const jwk = { ...await exportJWK(publicKey), kid: 'test-key', use: 'sig', alg: 'RS256' };
   let nonce = ''; let grants = 0;
@@ -29,7 +29,8 @@ async function setup(overrides: Record<string, unknown> = {}) {
     assert.equal(body.get('client_secret'), config.clientSecret);
     const claims = { iss: config.issuer, sub: config.subject, aud: config.clientId, nonce,
       exp: Math.floor(Date.now() / 1000) + 300, iat: Math.floor(Date.now() / 1000), ...overrides };
-    const idToken = await new SignJWT(claims).setProtectedHeader({ alg: 'RS256', kid: 'test-key' }).sign(privateKey);
+    const signingKey = forged ? (await generateKeyPair('RS256')).privateKey : privateKey;
+    const idToken = await new SignJWT(claims).setProtectedHeader({ alg: 'RS256', kid: 'test-key' }).sign(signingKey);
     return Response.json({ access_token: 'provider-secret', token_type: 'Bearer', expires_in: 300, id_token: idToken });
   };
   const app = createApp(config, { fetch: transport });
@@ -59,6 +60,12 @@ test('wrong state and missing login cookie fail before token exchange', async ()
   assert.equal((await app(new Request(`${callback}wrong`, { headers: { cookie } }))).status, 401);
   assert.equal((await app(new Request(callback))).status, 401);
   assert.equal(grants(), 0);
+});
+test('forged signature cannot create a session even with the correct issuer and subject', async () => {
+  const { app, callback, cookie } = await setup({}, true);
+  const response = await app(new Request(callback, { headers: { cookie } }));
+  assert.equal(response.status, 401);
+  assert.equal(response.headers.has('set-cookie'), false);
 });
 test('wrong owner cannot authorize even with matching email/domain; invalid nonce/issuer/audience/expiry fail', async () => {
   for (const overrides of [{ sub: 'other', email: 'owner@p3.example', hd: 'p3.example' },
