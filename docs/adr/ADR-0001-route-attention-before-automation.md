@@ -55,6 +55,20 @@ publish the already-finalized attention result, and a Slack failure cannot
 change the classification or prevent the persistent PR comment from being
 published.
 
+## Amendment: V1+ attention routing — 2026-10-10
+
+The P3 reference policy no longer requires a separate reviewer for every LOW
+classification. A pull request with a current, verified LOW result may be merged
+by any authorized team member without separate review only when repository policy
+authorizes that path and all required checks and protections pass. MEDIUM requires
+standard developer review. HIGH requires Tech Lead or relevant SME review.
+
+This amendment removes dedicated review attention from eligible LOW changes; it
+does not grant merge authority to the classifier or automate the merge. The router
+still only publishes evidence. Repository policy determines eligibility and an
+authorized human performs the merge. Approval, deployment and release authority
+remain outside the router.
+
 ## Alternatives Considered
 
 - **Autonomous AI approval or merge:** rejected because the proof of concept has not established sufficient reliability or independent controls.

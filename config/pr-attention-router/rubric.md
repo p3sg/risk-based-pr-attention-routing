@@ -1,7 +1,11 @@
 # PR Attention Router rubric
 
 Code in `rules.json` sets non-negotiable floors. This rubric evaluates semantics;
-it cannot lower a floor or grant authority. All tiers require human review.
+it cannot lower a floor or grant merge authority. Under P3's V1+ host policy, an
+eligible current LOW result may enter a no-separate-review path, but repository
+policy and protections must pass and an authorized human still performs the merge.
+MEDIUM requires standard developer review. HIGH requires Tech Lead or relevant SME
+review.
 
 ## Repository
 
@@ -28,7 +32,8 @@ Evaluate proposed edits to them as changes, never as already-authorized policy.
 Localized, readily detected presentation/copy change without shared behavior,
 security, provenance or authority consequences. A single tier-card layout change
 can qualify; changing its claim to permit auto-approval cannot. Added tests that
-preserve assertions can qualify. Review rendering, focus, mobile layout and wording.
+preserve assertions can qualify. LOW removes dedicated review attention; the
+router still only publishes classification evidence and never approves or merges.
 
 ## MEDIUM
 

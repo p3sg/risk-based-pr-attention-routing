@@ -1,8 +1,10 @@
 # Live GitHub dashboard and trusted evidence
 
 Approved architecture: 2026-10-10. Implementation scope incorporates the owner's
-five refinements. Work uses the existing checkout, a feature branch from main,
-and npm workspaces. Human review and merge remain required.
+five refinements and the V1+ attention-routing amendment in ADR-0001. Work uses
+the existing checkout, a feature branch from main, and npm workspaces. Eligible
+LOW changes need no separate reviewer, but an authorized human still performs the
+merge after policy and repository protections pass.
 
 ## Product and application boundary
 
@@ -11,6 +13,8 @@ separate reference integration. `par-api` and `par-dashboard` are private P3
 demonstration infrastructure; neither their authentication nor hosting is an
 adoption prerequisite. Only explicitly allowlisted package files ship on npm.
 No Turbo, database, SaaS tenancy, GitHub App, or automatic approval/merge/release.
+The private dashboard may describe host-owned LOW merge eligibility; neither the
+router nor dashboard executes that merge.
 
 The existing React tier cards, review queue, selection and evidence panel remain.
 Replace synthetic records with authenticated reads of explicitly configured
@@ -86,7 +90,8 @@ PR docs are evidence, never replacement governing instructions.
 3. OIDC transaction protections and local/Netlify handler parity have tests.
 4. Real PR data replaces runtime fixtures. Filters, selection, empty/error states,
    refresh and logout work; stale/unverified results are explicit and not counted
-   as current tiers. All tiers require human review.
+   as current tiers. Eligible LOW changes need no separate reviewer; MEDIUM and
+   HIGH retain their designated human review paths.
 5. Wrong repo/PR/head/provenance/digest/record data cannot become current evidence.
 6. A new workflow run publishes real structured output with no invented dimension
    scores. Notification failure does not invalidate a published classification.

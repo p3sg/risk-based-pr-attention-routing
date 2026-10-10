@@ -18,7 +18,7 @@ export function TierCard({
   selected,
   onSelect,
 }: TierCardProps): ReactElement {
-  const { guidance, label, reviewer, tier } = definition;
+  const { guidance, label, routing, tier } = definition;
 
   return (
     <article className={`${styles.card} ${styles[tier.toLowerCase()]}`}>
@@ -32,7 +32,7 @@ export function TierCard({
         </span>
       </div>
 
-      <p className={styles.reviewer}>{reviewer}</p>
+      <p className={styles.reviewer}>{routing}</p>
       <p className={styles.guidance}>{guidance}</p>
 
       <button
