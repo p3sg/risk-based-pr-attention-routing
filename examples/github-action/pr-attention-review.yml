@@ -27,6 +27,7 @@ permissions:
   contents: read
 
 env:
+  PAR_PACKAGE: '@p3sg/pr-attention-router@REPLACE_WITH_REVIEWED_VERSION'
   PAR_ROUTER: ${{ runner.temp }}/par-tool/node_modules/@p3sg/pr-attention-router/dist
   PAR_ADAPTER: config/pr-attention-router
 
@@ -59,14 +60,14 @@ jobs:
 
     steps:
       - name: Check out trusted router and rules from the default branch
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # actions/checkout@v7
         with:
           ref: ${{ github.sha }}
           fetch-depth: 1
           persist-credentials: false
 
       - name: Check out pull request for inspection
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # actions/checkout@v7
         with:
           ref: ${{ github.event.workflow_run.pull_requests[0].head.sha }}
           fetch-depth: 0
@@ -74,16 +75,16 @@ jobs:
           path: .par/target
 
       - name: Set up Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # actions/setup-node@v7
         with:
           node-version: '24'
 
       - name: Install reviewed npm router (set the exact published version first)
-        run: npm install --ignore-scripts --no-audit --prefix "$RUNNER_TEMP/par-tool" @p3sg/pr-attention-router@REPLACE_WITH_REVIEWED_VERSION
+        run: npm install --ignore-scripts --no-audit --prefix "$RUNNER_TEMP/par-tool" "$PAR_PACKAGE"
 
       - name: Authorize pull request
         id: authorize
-        uses: actions/github-script@v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # actions/github-script@v8
         env:
           EXPECTED_HEAD_SHA: ${{ github.event.workflow_run.pull_requests[0].head.sha }}
           VALIDATED_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
@@ -170,14 +171,14 @@ jobs:
 
     steps:
       - name: Check out trusted router and rules from the default branch
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # actions/checkout@v7
         with:
           ref: ${{ github.sha }}
           fetch-depth: 1
           persist-credentials: false
 
       - name: Check out pull request for inspection
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # actions/checkout@v7
         with:
           ref: ${{ github.event.workflow_run.pull_requests[0].head.sha }}
           fetch-depth: 0
@@ -185,12 +186,12 @@ jobs:
           path: .par/target
 
       - name: Set up Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # actions/setup-node@v7
         with:
           node-version: '24'
 
       - name: Install reviewed npm router (set the exact published version first)
-        run: npm install --ignore-scripts --no-audit --prefix "$RUNNER_TEMP/par-tool" @p3sg/pr-attention-router@REPLACE_WITH_REVIEWED_VERSION
+        run: npm install --ignore-scripts --no-audit --prefix "$RUNNER_TEMP/par-tool" "$PAR_PACKAGE"
 
       - name: Build the classification prompt
         env:
@@ -210,7 +211,7 @@ jobs:
         continue-on-error: true
         # Under the job's 20 minutes, so a hung Codex still leaves this job green.
         timeout-minutes: 12
-        uses: openai/codex-action@v1.8
+        uses: openai/codex-action@e469131063221562acfb9ea6bbc9fd7f27226ffb # openai/codex-action@v1.8
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
           safety-strategy: read-only
@@ -237,23 +238,23 @@ jobs:
 
     steps:
       - name: Check out trusted router and rules from the default branch
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # actions/checkout@v7
         with:
           ref: ${{ github.sha }}
           fetch-depth: 1
           persist-credentials: false
 
       - name: Set up Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # actions/setup-node@v7
         with:
           node-version: '24'
 
       - name: Install reviewed npm router (set the exact published version first)
-        run: npm install --ignore-scripts --no-audit --prefix "$RUNNER_TEMP/par-tool" @p3sg/pr-attention-router@REPLACE_WITH_REVIEWED_VERSION
+        run: npm install --ignore-scripts --no-audit --prefix "$RUNNER_TEMP/par-tool" "$PAR_PACKAGE"
 
       - name: Read the existing attention comment
         id: existing
-        uses: actions/github-script@v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # actions/github-script@v8
         env:
           PAR_PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
         with:
@@ -401,23 +402,22 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
-      issues: write
       pull-requests: write
 
     steps:
       - name: Check out trusted publication code
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # actions/checkout@v7
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
 
       - name: Set up Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # actions/setup-node@v7
         with:
           node-version: '24'
 
       - name: Install reviewed npm router (set the exact published version first)
-        run: npm install --ignore-scripts --no-audit --prefix "$RUNNER_TEMP/par-tool" @p3sg/pr-attention-router@REPLACE_WITH_REVIEWED_VERSION
+        run: npm install --ignore-scripts --no-audit --prefix "$RUNNER_TEMP/par-tool" "$PAR_PACKAGE"
 
       - name: Prepare bounded publication evidence
         env:
@@ -430,7 +430,7 @@ jobs:
           node "$PAR_ROUTER/publish-record.js"
 
       - name: Retain publication provenance
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # actions/upload-artifact@v7
         with:
           name: par-result-${{ github.event.workflow_run.pull_requests[0].number }}-${{ github.event.workflow_run.head_sha }}-${{ github.run_attempt }}
           path: .par/classification.json
@@ -439,7 +439,7 @@ jobs:
 
       - name: Create or update the PR comment
         id: comment
-        uses: actions/github-script@v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # actions/github-script@v8
         env:
           PAR_PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
           COMMENT_ID: ${{ needs.finalize.outputs.comment-id }}

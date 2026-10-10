@@ -69,12 +69,16 @@ try {
   ), 'utf8'));
   const packageName = installedManifest.name;
   await check('scoped package name', () => assert.equal(packageName, '@p3sg/pr-attention-router'));
+  await check('exact public entry points', () => assert.deepEqual(
+    Object.keys(installedManifest.exports).sort(),
+    ['.', './publication'],
+  ));
   await check('normalized CLI metadata', () => assert.deepEqual(
     JSON.parse(readFileSync(join(packageDir, 'package.json'), 'utf8')).bin,
     { 'pr-attention-router': 'dist/route.js' },
   ));
   await check('v1 release metadata', () => {
-    assert.equal(installedManifest.version, '1.0.0');
+    assert.equal(installedManifest.version, '1.0.1');
     assert.equal(installedManifest.license, 'Apache-2.0');
     assert.equal(installedManifest.author, 'Joe Davault');
     assert.deepEqual(installedManifest.repository, {
@@ -109,32 +113,45 @@ try {
     ), 'utf8');
     assert.match(workflow,
       /node_modules\/@p3sg\/pr-attention-router\/dist/u);
-    assert.match(workflow,
-      /npm install[^\n]+@p3sg\/pr-attention-router@REPLACE_WITH_REVIEWED_VERSION/gu);
+    assert.equal(
+      workflow.match(/@p3sg\/pr-attention-router@REPLACE_WITH_REVIEWED_VERSION/gu)?.length,
+      1,
+    );
+    assert.equal(workflow.match(/npm install[^\n]+"\$PAR_PACKAGE"/gu)?.length, 4);
     assert.doesNotMatch(workflow,
       /node_modules\/pr-attention-router|\spr-attention-router@REPLACE_WITH_REVIEWED_VERSION/gu);
     assert.match(workflow,
       /output-schema-file:\s*\$\{\{ env\.PAR_ROUTER \}\}\/classification\.schema\.json/u);
+    assert.doesNotMatch(workflow, /^\s*issues:\s*write\s*$/mu);
+    for (const line of workflow.match(/^\s*uses:\s*.+$/gmu) ?? []) {
+      assert.match(line, /@[a-f0-9]{40}\s+#\s+.+@v\d/u);
+    }
   });
   await check('token-free staged release workflow', () => {
     const workflow = readFileSync(join(repositoryRoot, '.github', 'workflows', 'publish-npm.yml'), 'utf8');
     assert.match(workflow, /release:\s*\n\s+types:\s*\[published\]/u);
-    assert.match(workflow, /permissions:\s*\n\s+contents:\s*read\s*\n\s+id-token:\s*write/u);
+    assert.match(workflow, /permissions:\s*\{\}/u);
+    assert.match(workflow, /validate:\s*\n[\s\S]*?permissions:\s*\n\s+contents:\s*read/u);
+    assert.match(workflow, /stage:\s*\n[\s\S]*?needs:\s*validate\s*\n[\s\S]*?permissions:\s*\n\s+id-token:\s*write/u);
     assert.match(workflow, /runs-on:\s*ubuntu-24\.04/u);
     assert.doesNotMatch(workflow, /self-hosted|NODE_AUTH_TOKEN|secrets\./u);
     assert.match(workflow, /persist-credentials:\s*false/u);
     assert.match(workflow, /node-version:\s*['"]24['"]/u);
     assert.match(workflow, /registry-url:\s*['"]https:\/\/registry\.npmjs\.org['"]/u);
     assert.match(workflow, /package-manager-cache:\s*false/u);
-    assert.match(workflow, /npm install --global npm@11\.21\.0/u);
+    assert.equal(workflow.match(/npm install --global --ignore-scripts npm@11\.21\.0/gu)?.length, 2);
     assert.match(workflow, /EXPECTED_TAG=.*packages\/pr-attention-router\/package\.json/u);
     assert.match(workflow, /GITHUB_REF_NAME.*EXPECTED_TAG/u);
     assert.match(workflow, /npm ci --ignore-scripts/u);
     assert.match(workflow, /npm run check:router/u);
     assert.match(workflow, /npm audit --workspace @p3sg\/pr-attention-router --omit=dev/u);
     assert.match(workflow, /npm audit --workspace @p3sg\/pr-attention-router/u);
-    assert.match(workflow, /working-directory:\s*packages\/pr-attention-router\s*\n\s+run:\s*npm stage publish --access public/u);
+    assert.match(workflow, /npm pack \.\/packages\/pr-attention-router --ignore-scripts/u);
+    assert.match(workflow, /npm stage publish "\$\{tarballs\[0\]\}" --access public/u);
     assert.doesNotMatch(workflow, /(^|\s)npm publish(?:\s|$)/mu);
+    for (const line of workflow.match(/^\s*uses:\s*.+$/gmu) ?? []) {
+      assert.match(line, /@[a-f0-9]{40}\s+#\s+.+@v\d/u);
+    }
   });
 
   const runtimeSource = `

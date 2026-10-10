@@ -1,6 +1,6 @@
 {
   "name": "@p3sg/pr-attention-router",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "license": "Apache-2.0",
   "description": "Classification-only PR attention router: coded floors plus a host rubric applied by AI.",
   "keywords": [

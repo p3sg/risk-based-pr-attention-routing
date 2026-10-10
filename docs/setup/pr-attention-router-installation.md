@@ -6,7 +6,7 @@ infrastructure and are not required or included.
 
 ## Release contract
 
-Version 1.0.0 requires Node 24, has no runtime dependencies and is licensed under
+Version 1.0.1 requires Node 24, has no runtime dependencies and is licensed under
 Apache-2.0. The supported JavaScript/TypeScript imports are exactly:
 
 - `@p3sg/pr-attention-router`
@@ -16,8 +16,8 @@ Publication records are closed schemas. Unknown authority, analysis or risk-
 dimension fields are rejected instead of preserved. Internal modules and the
 workflow-only publication script are not public exports.
 
-The repository prepares a staged npm release; it does not imply that version
-1.0.0 is already public. Before approval, inspect the packed artifact with:
+The repository prepares a staged npm release; its manifest does not prove registry
+availability. Before approval, inspect the packed artifact with:
 
 ```sh
 npm run package-smoke --workspace @p3sg/pr-attention-router
@@ -29,7 +29,7 @@ npm pack --dry-run --json --ignore-scripts --workspace @p3sg/pr-attention-router
 1. Install the reviewed exact release rather than a moving tag:
 
    ```sh
-   npm install --save-exact @p3sg/pr-attention-router@1.0.0
+   npm install --save-exact @p3sg/pr-attention-router@1.0.1
    ```
 
 2. Copy `node_modules/@p3sg/pr-attention-router/dist/examples/config/` to

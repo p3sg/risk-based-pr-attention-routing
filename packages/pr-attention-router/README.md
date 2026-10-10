@@ -5,7 +5,7 @@ a minimum LOW, MEDIUM or HIGH tier from host-owned path rules, change size and
 validation status. AI applies the host rubric and may raise, never lower, that
 floor. The package grants no approval, merge, deployment or release authority.
 
-Version 1.0.0 requires Node 24, has no runtime dependencies and is licensed under
+Version 1.0.1 requires Node 24, has no runtime dependencies and is licensed under
 Apache-2.0. React, Netlify, authentication, databases and the private P3 dashboard
 are not package dependencies and are not included in the tarball.
 
@@ -14,7 +14,7 @@ are not package dependencies and are not included in the tarball.
 Install a reviewed exact version:
 
 ```sh
-npm install --save-exact @p3sg/pr-attention-router@1.0.0
+npm install --save-exact @p3sg/pr-attention-router@1.0.1
 ```
 
 The supported module entry points are exactly:
@@ -61,11 +61,13 @@ named local `docs/*.md` files from the trusted repository root. The loader accep
 at most eight files and 32 KB, and rejects traversal, URLs and symlinks. Documents
 proposed by a pull request remain evidence rather than active policy.
 
-Invalid or unavailable AI output falls back to the deterministic floor. Legacy AI
-output without risk dimensions remains readable; missing values are not invented.
+Invalid or unavailable AI output falls back to the deterministic floor. Runtime
+validation enforces the same closed shape and bounds as `classification.schema.json`;
+missing dimensions, missing-evidence data and unknown fields are rejected.
 
 ## Release status
 
-This repository prepares `@p3sg/pr-attention-router` 1.0.0 for staged publication.
-The presence of this manifest does not mean the version is live on npm. Inspect the
-packed artifact and the staged package before approving its public release.
+Releases are packed in an unprivileged validation job, submitted through npm trusted
+publishing, and promoted only after a maintainer inspects the staged package and
+approves it with 2FA. A source manifest does not prove registry availability; verify
+the requested version on npm before adopting it.

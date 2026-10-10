@@ -4,32 +4,31 @@ on:
   release:
     types: [published]
 
-permissions:
-  contents: read
-  id-token: write
+permissions: {}
 
 jobs:
-  stage:
-    name: Validate and stage package
+  validate:
+    name: Validate and pack package
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    permissions:
+      contents: read
 
     steps:
       - name: Check out release tag
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # actions/checkout@v7
         with:
           ref: ${{ github.event.release.tag_name }}
           persist-credentials: false
 
       - name: Set up Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # actions/setup-node@v7
         with:
           node-version: '24'
-          registry-url: 'https://registry.npmjs.org'
           package-manager-cache: false
 
       - name: Install staged-publishing npm CLI
-        run: npm install --global npm@11.21.0
+        run: npm install --global --ignore-scripts npm@11.21.0
 
       - name: Verify release tag matches package version
         run: |
@@ -51,6 +50,56 @@ jobs:
       - name: Audit complete package dependency surface
         run: npm audit --workspace @p3sg/pr-attention-router
 
-      - name: Stage public package for human approval
-        working-directory: packages/pr-attention-router
-        run: npm stage publish --access public
+      - name: Pack the validated package
+        run: |
+          mkdir -p .release
+          npm pack ./packages/pr-attention-router --ignore-scripts --pack-destination .release
+          cd .release
+          sha256sum *.tgz > SHA256SUMS
+
+      - name: Retain the validated package
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # actions/upload-artifact@v7
+        with:
+          name: npm-package-${{ github.event.release.tag_name }}
+          path: |
+            .release/*.tgz
+            .release/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 7
+
+  stage:
+    name: Stage package for human approval
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Set up Node.js for npm OIDC
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # actions/setup-node@v7
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false
+
+      - name: Install staged-publishing npm CLI
+        run: npm install --global --ignore-scripts npm@11.21.0
+
+      - name: Download the validated package
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # actions/download-artifact@v8
+        with:
+          name: npm-package-${{ github.event.release.tag_name }}
+          path: release
+
+      - name: Verify and stage the package
+        run: |
+          cd release
+          sha256sum --check SHA256SUMS
+          shopt -s nullglob
+          tarballs=(*.tgz)
+          if [[ ${#tarballs[@]} -ne 1 ]]; then
+            echo "::error::Expected exactly one package tarball."
+            exit 1
+          fi
+          npm stage publish "${tarballs[0]}" --access public

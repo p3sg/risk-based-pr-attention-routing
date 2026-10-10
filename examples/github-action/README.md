@@ -1,7 +1,7 @@
 # Copyable GitHub Actions integration
 
 This is the hosted reference workflow adapted to install a reviewed npm package
-instead of using monorepo source. Replace every `REPLACE_WITH_REVIEWED_VERSION`
+instead of using monorepo source. Replace the single `REPLACE_WITH_REVIEWED_VERSION`
 placeholder after publishing/choosing a reviewed release, configure your verification
 workflow name, and copy to `.github/workflows/pr-attention-review.yml`.
 
