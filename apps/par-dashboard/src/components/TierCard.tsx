@@ -6,6 +6,7 @@ import styles from './TierCard.module.css';
 interface TierCardProps {
   readonly definition: TierDefinition;
   readonly count: number;
+  readonly disabled: boolean;
   readonly selected: boolean;
   readonly onSelect: (tier: RiskTier) => void;
 }
@@ -13,6 +14,7 @@ interface TierCardProps {
 export function TierCard({
   definition,
   count,
+  disabled,
   selected,
   onSelect,
 }: TierCardProps): ReactElement {
@@ -37,10 +39,11 @@ export function TierCard({
         aria-label={`Show ${tier} attention pull requests`}
         aria-pressed={selected}
         className={styles.filterButton}
+        disabled={disabled}
         type="button"
         onClick={() => onSelect(tier)}
       >
-        Filter queue
+        View queue
       </button>
     </article>
   );

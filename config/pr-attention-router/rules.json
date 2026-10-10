@@ -1,6 +1,18 @@
 {
   "rules": [
     {
+      "id": "private-api-boundary",
+      "tier": "HIGH",
+      "paths": ["apps/par-api/**", "netlify.toml"],
+      "why": "Authentication, repository authorization, result provenance and hosting can expose private repository data."
+    },
+    {
+      "id": "security-governance",
+      "tier": "HIGH",
+      "paths": ["docs/security.md", "docs/governance.md", "examples/**"],
+      "why": "Weakening security policy or adopter workflow examples can weaken human authority and credential boundaries."
+    },
+    {
       "id": "ci-workflows",
       "tier": "HIGH",
       "paths": [".github/workflows/**"],
@@ -30,8 +42,8 @@
     {
       "id": "dashboard-shared-contracts",
       "tier": "MEDIUM",
-      "paths": ["apps/par-dashboard/src/{domain,data}/**"],
-      "why": "If shared domain types, router-result presentation, or sample-data shapes break unnoticed, multiple dashboard components can present inconsistent or incorrect classifications."
+      "paths": ["apps/par-dashboard/src/domain/**", "apps/par-dashboard/src/api.ts"],
+      "why": "Shared domain types and API access affect every dashboard component's interpretation of evidence."
     },
     {
       "id": "dashboard-build",
@@ -47,7 +59,7 @@
     {
       "id": "workspace-dependencies",
       "tier": "MEDIUM",
-      "paths": ["package.json", "package-lock.json"],
+      "paths": ["package.json", "package-lock.json", "scripts/**"],
       "why": "If workspace dependency configuration breaks unnoticed, package and dashboard validation can fail together."
     },
     {
