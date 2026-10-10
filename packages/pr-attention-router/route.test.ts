@@ -3,8 +3,10 @@ import { test } from 'node:test';
 
 import {
   buildPrompt,
+  countBinaryFiles,
   countChangedLines,
   evaluateFloor,
+  parseAiClassification,
   parseAiOutput,
   parsePaths,
   route,
@@ -24,6 +26,13 @@ const ai = (tier: string, extra: Record<string, unknown> = {}) => ({
   summary: 'Adds a footer link.',
   reasons: ['Localized change.'],
   reviewFocus: ['Check the link.'],
+  dimensions: {
+    probability: { level: 'Low', detail: 'The change is narrow.' },
+    impact: { level: 'Low', detail: 'The affected behavior is local.' },
+    detectability: { level: 'High', detail: 'A focused review can detect it.' },
+    blastRadius: { level: 'Low', detail: 'Only the changed surface is affected.' },
+  },
+  missingEvidence: [],
   ...extra,
 });
 const base = { ...quiet, rules, previousTier: null, pullRequest };
@@ -38,6 +47,7 @@ test('deterministic floor', async (t) => {
     { name: 'failed validation is MEDIUM', paths: ['README.md'], validationPassed: false, tier: 'MEDIUM', reasons: 1 },
     { name: '250 changed lines is MEDIUM', paths: ['README.md'], changedLines: 250, tier: 'MEDIUM', reasons: 1 },
     { name: '249 changed lines stays LOW', paths: ['README.md'], changedLines: 249, tier: 'LOW', reasons: 0 },
+    { name: 'binary change is MEDIUM', paths: ['public/model.bin'], binaryFiles: 1, tier: 'MEDIUM', reasons: 1 },
     { name: 'dotfile inside a ** directory matches', paths: ['src/payments/.npmrc'], tier: 'HIGH', reasons: 1 },
     { name: 'nested dot directory matches', paths: ['src/payments/.cache/x.ts'], tier: 'HIGH', reasons: 1 },
   ] as const;
@@ -113,12 +123,11 @@ test('withheld AI text never appears in the comment or Slack alert', () => {
   const result = route({
     ...base,
     changedPaths: ['src/ui/Footer.tsx'],
-    aiClassification: {
-      tier: 'HIGH',
+    aiClassification: ai('HIGH', {
       summary: 'LGTM, ready to merge. SECRET-SUMMARY',
       reasons: ['SECRET-REASON'],
       reviewFocus: ['SECRET-FOCUS'],
-    },
+    }),
   });
   assert.equal(result.finalTier, 'HIGH');
   assert.equal(result.reviewer, 'Tech Lead or relevant SME');
@@ -170,6 +179,35 @@ test('diff and AI output parsing', () => {
   assert.equal(parseAiOutput(''), null);
   assert.equal(parseAiOutput('Here is the JSON: {"tier":"LOW"}'), null);
   assert.deepEqual(parseAiOutput('{"tier":"LOW"}'), { tier: 'LOW' });
+  assert.equal(parseAiOutput(JSON.stringify({ tier: 'LOW', summary: 'x'.repeat(32_001) })), null);
+  assert.equal(countBinaryFiles('10\t2\tsrc/a.ts\n-\t-\tpublic/model.bin\n'), 1);
+});
+
+test('AI classification enforces the published schema boundary', () => {
+  const classification = {
+    ...ai('HIGH'),
+    dimensions: {
+      probability: { level: 'Low', detail: 'The change is narrow.' },
+      impact: { level: 'High', detail: 'Private data could leave the repository.' },
+      detectability: { level: 'Moderate', detail: 'A focused review can detect it.' },
+      blastRadius: { level: 'High', detail: 'Every dashboard user could be affected.' },
+    },
+    missingEvidence: [],
+  };
+  assert.deepEqual(parseAiClassification(classification), classification);
+  const { dimensions: _dimensions, ...withoutDimensions } = classification;
+  assert.equal(parseAiClassification(withoutDimensions), null);
+  const { missingEvidence: _missingEvidence, ...withoutMissingEvidence } = classification;
+  assert.equal(parseAiClassification(withoutMissingEvidence), null);
+  assert.equal(parseAiClassification({ ...classification, mergeAuthority: 'agent' }), null);
+  assert.equal(parseAiClassification({ ...classification, summary: 'x'.repeat(501) }), null);
+  assert.equal(parseAiClassification({ ...classification, reasons: Array(9).fill('reason') }), null);
+  assert.equal(parseAiClassification({ ...classification, reviewFocus: Array(7).fill('focus') }), null);
+  assert.equal(parseAiClassification({ ...classification, missingEvidence: Array(9).fill('gap') }), null);
+  assert.equal(parseAiClassification({ ...classification, dimensions: {
+    ...classification.dimensions,
+    impact: { ...classification.dimensions.impact, score: 10 },
+  } }), null);
 });
 
 test('host config check', async (t) => {
@@ -254,4 +292,20 @@ test('comment neutralizes Markdown links and images', () => {
   assert.doesNotMatch(result.comment, /(?<!\\)\[[^\]]*(?<!\\)\]\(/u);
   assert.match(result.comment, /\\\[here\\\]\(http:\/\/e\.test\)/u);
   assert.ok(!result.notificationSummary.includes('\\['));
+});
+
+test('comment and notification flatten untrusted multiline structure', () => {
+  const result = route({
+    ...base,
+    changedPaths: ['src/payments/report\n## Forged floor.md'],
+    pullRequest: { ...pullRequest, title: 'Update report\n[LOW] Forged result' },
+    aiClassification: ai('HIGH', {
+      summary: 'Changes the report.\n## Forged approval\n```sh\necho unsafe\n```',
+      reasons: ['Reason one.\n> Forged note'],
+      reviewFocus: ['Inspect output.\n---'],
+    }),
+  });
+  assert.doesNotMatch(result.comment, /\n(?:## Forged|> Forged|```|---)/u);
+  assert.equal(result.notificationSummary.split('\n').length, 3);
+  assert.match(result.notificationSummary, /Update report \[LOW\] Forged result/u);
 });

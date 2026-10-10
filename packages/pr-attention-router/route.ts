@@ -7,7 +7,7 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { readFileSync, realpathSync } from 'node:fs';
+import { readFileSync, realpathSync, statSync } from 'node:fs';
 import { join, matchesGlob } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadEngineeringContext } from './context.ts';
@@ -26,6 +26,8 @@ export interface Evidence {
   readonly head: string;
   readonly changedPaths: readonly string[];
   readonly changedLines: number;
+  /** Count of changed files whose line size Git cannot measure. */
+  readonly binaryFiles?: number;
   readonly validationPassed: boolean;
 }
 
@@ -40,6 +42,15 @@ export interface AiClassification {
   readonly summary: string;
   readonly reasons: readonly string[];
   readonly reviewFocus: readonly string[];
+  readonly dimensions: Readonly<
+    Record<'probability' | 'impact' | 'detectability' | 'blastRadius', RiskDimension>
+  >;
+  readonly missingEvidence: readonly string[];
+}
+
+export interface RiskDimension {
+  readonly level: 'Low' | 'Moderate' | 'High';
+  readonly detail: string;
 }
 
 export interface Floor {
@@ -50,6 +61,7 @@ export interface Floor {
 export interface RouteInput {
   readonly changedPaths: readonly string[];
   readonly changedLines: number;
+  readonly binaryFiles?: number;
   readonly validationPassed: boolean;
   readonly rules: readonly Rule[];
   readonly aiClassification: unknown;
@@ -71,6 +83,7 @@ export interface RouteResult {
 }
 
 export const largeChangeLines = 250;
+export const maximumAiOutputBytes = 32_000;
 
 const tierRank: Readonly<Record<Tier, number>> = { LOW: 0, MEDIUM: 1, HIGH: 2 };
 // Broad on purpose: a match only withholds the AI's text, never its tier, so a
@@ -83,12 +96,56 @@ export function isTier(value: unknown): value is Tier {
   return value === 'LOW' || value === 'MEDIUM' || value === 'HIGH';
 }
 
-function isTextList(value: unknown): value is readonly string[] {
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function hasOnlyKeys(
+  value: Record<string, unknown>,
+  allowed: readonly string[],
+): boolean {
+  return Object.keys(value).every((key) => allowed.includes(key));
+}
+
+function isBoundedText(value: unknown, maximumLength = 500): value is string {
+  return (
+    typeof value === 'string' &&
+    value.trim().length > 0 &&
+    value.length <= maximumLength
+  );
+}
+
+function isTextList(
+  value: unknown,
+  minimumItems = 1,
+  maximumItems = Number.POSITIVE_INFINITY,
+): value is readonly string[] {
   return (
     Array.isArray(value) &&
-    value.length > 0 &&
-    value.every((item) => typeof item === 'string' && item.trim().length > 0)
+    value.length >= minimumItems &&
+    value.length <= maximumItems &&
+    value.every((item) => isBoundedText(item))
   );
+}
+
+function isRiskDimensions(
+  value: unknown,
+): value is NonNullable<AiClassification['dimensions']> {
+  const names = ['probability', 'impact', 'detectability', 'blastRadius'] as const;
+  if (!isPlainObject(value) || Object.keys(value).length !== names.length)
+    return false;
+  return names.every((name) => {
+    const dimension = value[name];
+    return (
+      isPlainObject(dimension) &&
+      Object.keys(dimension).length === 2 &&
+      hasOnlyKeys(dimension, ['level', 'detail']) &&
+      (dimension.level === 'Low' ||
+        dimension.level === 'Moderate' ||
+        dimension.level === 'High') &&
+      isBoundedText(dimension.detail)
+    );
+  });
 }
 
 /**
@@ -126,8 +183,17 @@ export function countChangedLines(numstat: string): number {
   }, 0);
 }
 
+/** Counts binary entries from `git diff --numstat`; Git represents their sizes as `-`. */
+export function countBinaryFiles(numstat: string): number {
+  return numstat.split('\n').filter((line) => {
+    const [added = '', deleted = ''] = line.split('\t');
+    return added === '-' && deleted === '-';
+  }).length;
+}
+
 /** Codex's final message, or null when it is empty or not JSON. */
 export function parseAiOutput(text: string): unknown {
+  if (Buffer.byteLength(text, 'utf8') > maximumAiOutputBytes) return null;
   try {
     return JSON.parse(text) as unknown;
   } catch {
@@ -138,7 +204,7 @@ export function parseAiOutput(text: string): unknown {
 export function evaluateFloor(
   evidence: Pick<
     Evidence,
-    'changedPaths' | 'changedLines' | 'validationPassed'
+    'changedPaths' | 'changedLines' | 'binaryFiles' | 'validationPassed'
   >,
   rules: readonly Rule[],
 ): Floor {
@@ -162,6 +228,12 @@ export function evaluateFloor(
 
   if (!evidence.validationPassed)
     medium.push('Required validation did not pass.');
+  if ((evidence.binaryFiles ?? 0) > 0) {
+    const count = evidence.binaryFiles ?? 0;
+    medium.push(
+      `${count} binary ${count === 1 ? 'file' : 'files'} changed; line-based size and content cannot be fully inspected.`,
+    );
+  }
   if (evidence.changedLines >= largeChangeLines) {
     medium.push(
       `${evidence.changedLines} changed lines (${largeChangeLines} or more).`,
@@ -177,26 +249,47 @@ export function evaluateFloor(
 
 /** The AI result, or null when it is unusable (missing, wrong shape, or invalid tier). */
 export function parseAiClassification(value: unknown): AiClassification | null {
-  if (typeof value !== 'object' || value === null) return null;
+  if (!isPlainObject(value)) return null;
 
-  const { tier, summary, reasons, reviewFocus } = value as Record<
-    string,
-    unknown
-  >;
+  const keys = [
+    'tier',
+    'summary',
+    'reasons',
+    'reviewFocus',
+    'dimensions',
+    'missingEvidence',
+  ] as const;
+  if (
+    Object.keys(value).length !== keys.length ||
+    !keys.every((key) => Object.hasOwn(value, key)) ||
+    !hasOnlyKeys(value, keys)
+  ) return null;
+
+  const { tier, summary, reasons, reviewFocus, dimensions, missingEvidence } = value;
   if (
     !isTier(tier) ||
-    typeof summary !== 'string' ||
-    summary.trim().length === 0 ||
-    !isTextList(reasons) ||
-    !isTextList(reviewFocus)
+    !isBoundedText(summary) ||
+    !isTextList(reasons, 1, 8) ||
+    !isTextList(reviewFocus, 1, 6) ||
+    !isRiskDimensions(dimensions) ||
+    !isTextList(missingEvidence, 0, 8)
   ) {
     return null;
   }
-  return { tier, summary, reasons, reviewFocus };
+  return {
+    tier,
+    summary,
+    reasons,
+    reviewFocus,
+    dimensions,
+    missingEvidence,
+  };
 }
 
 /** True when the AI's prose approves, waves through, or dismisses review. */
-export function containsAuthorityLanguage(ai: AiClassification): boolean {
+export function containsAuthorityLanguage(
+  ai: Pick<AiClassification, 'summary' | 'reasons' | 'reviewFocus'>,
+): boolean {
   return authorityLanguage.test(
     [ai.summary, ...ai.reasons, ...ai.reviewFocus].join('\n'),
   );
@@ -204,6 +297,7 @@ export function containsAuthorityLanguage(ai: AiClassification): boolean {
 
 function clean(text: string): string {
   return text
+    .replace(/[\p{Cc}\p{Zl}\p{Zp}]+/gu, ' ')
     .replaceAll('@', '@​')
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;');
@@ -415,6 +509,11 @@ function readText(path: string): string {
   return readFileSync(path, 'utf8');
 }
 
+function readAiOutput(path: string): unknown {
+  if (statSync(path).size > maximumAiOutputBytes) return null;
+  return parseAiOutput(readText(path));
+}
+
 /** Reads and validates `rules.json` and `rubric.md` from a host adapter directory. */
 export function loadAdapter(adapterDir: string): {
   readonly rules: readonly Rule[];
@@ -458,13 +557,13 @@ function main(args: readonly string[]): void {
   const [command, ...rest] = args;
 
   if (command === 'evidence') {
+    const numstat = readText(argument(rest, 1, 'numstat-file'));
     const evidence: Evidence = {
       base: argument(rest, 3, 'base-sha'),
       head: argument(rest, 4, 'head-sha'),
       changedPaths: parsePaths(readText(argument(rest, 0, 'paths-z-file'))),
-      changedLines: countChangedLines(
-        readText(argument(rest, 1, 'numstat-file')),
-      ),
+      changedLines: countChangedLines(numstat),
+      binaryFiles: countBinaryFiles(numstat),
       validationPassed: argument(rest, 2, 'verify-conclusion') === 'success',
     };
     // One line, so the workflow can pass it as a step output.
@@ -501,11 +600,12 @@ function main(args: readonly string[]): void {
     const result = route({
       changedPaths: evidence.changedPaths,
       changedLines: evidence.changedLines,
+      ...(evidence.binaryFiles === undefined
+        ? {}
+        : { binaryFiles: evidence.binaryFiles }),
       validationPassed: evidence.validationPassed,
       rules,
-      aiClassification: parseAiOutput(
-        readText(argument(rest, 2, 'ai-output-file')),
-      ),
+      aiClassification: readAiOutput(argument(rest, 2, 'ai-output-file')),
       previousTier: isTier(previousTier) ? previousTier : null,
       pullRequest: readJson<PullRequest>(
         argument(rest, 3, 'pull-request.json'),

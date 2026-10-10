@@ -45,11 +45,11 @@ npm run build
 ## Adopt only the router
 
 See [installation](docs/setup/pr-attention-router-installation.md) and the package
-[README](packages/pr-attention-router/README.md). The public package is prepared as
-`@p3sg/pr-attention-router` 1.0.0 under Apache-2.0. It requires Node 24, has no
+[README](packages/pr-attention-router/README.md). The package manifest currently
+prepares `@p3sg/pr-attention-router` 1.0.1 under Apache-2.0. It requires Node 24, has no
 runtime dependencies and exposes only the root and `/publication` module entry
-points. This branch prepares and validates packaging; it does **not** claim that
-the version has been published to npm.
+points. Verify registry availability before installing a version; source metadata
+alone does not establish that it has been published to npm.
 
 The workflow uses trusted default-branch code/policy, inspects untrusted PR changes,
 publishes a human-readable comment plus bounded structured evidence and an Actions

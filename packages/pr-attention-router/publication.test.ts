@@ -3,14 +3,24 @@ import { test } from 'node:test';
 import { route } from './route.ts';
 import { createPublication, parsePublication, publicationMarker, readPublication } from './publication.ts';
 
+const dimensions = {
+  probability: { level: 'Low', detail: 'A narrow change is unlikely to fail.' },
+  impact: { level: 'Moderate', detail: 'A failure could delay a review.' },
+  detectability: { level: 'High', detail: 'Validation should expose a failure.' },
+  blastRadius: { level: 'Low', detail: 'Only this pull request is affected.' },
+} as const;
+const classification = {
+  tier: 'MEDIUM', summary: 'Shared queue contract.', reasons: ['Two consumers.'],
+  reviewFocus: ['Check both consumers.'], dimensions, missingEvidence: [],
+} as const;
 const input = {
   repository: 'p3/reference', pullRequest: 7, headSha: 'a'.repeat(40), baseSha: 'b'.repeat(40),
   policySha: 'c'.repeat(40), runId: 42, runAttempt: 1, createdAt: '2026-10-10T12:00:00.000Z',
   changedLines: 10, validationPassed: true,
   result: route({ changedPaths: [], changedLines: 10, validationPassed: true, rules: [],
-    aiClassification: { tier: 'MEDIUM', summary: 'Shared queue contract.', reasons: ['Two consumers.'], reviewFocus: ['Check both consumers.'] },
+    aiClassification: classification,
     previousTier: null, pullRequest: { number: 7, title: 'Queue', url: 'https://github.com/p3/reference/pull/7' } }),
-  aiClassification: { tier: 'MEDIUM', summary: 'Shared queue contract.', reasons: ['Two consumers.'], reviewFocus: ['Check both consumers.'] },
+  aiClassification: classification,
 };
 test('publication preserves real evidence and identity across the comment boundary', () => {
   const record = createPublication(input);
@@ -47,13 +57,6 @@ test('rejects undeclared analysis fields', () => {
   assert.ok(record.analysis);
   assert.equal(parsePublication({ ...record, analysis: { ...record.analysis, confidence: 1 } }), null);
 });
-
-const dimensions = {
-  probability: { level: 'Low', detail: 'A narrow change is unlikely to fail.' },
-  impact: { level: 'Moderate', detail: 'A failure could delay a review.' },
-  detectability: { level: 'High', detail: 'Validation should expose a failure.' },
-  blastRadius: { level: 'Low', detail: 'Only this pull request is affected.' },
-} as const;
 
 test('rejects undeclared risk dimensions', () => {
   const record = createPublication(input);
