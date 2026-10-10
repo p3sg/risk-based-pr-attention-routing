@@ -3,6 +3,8 @@
 ## Workflow
 
 - Create short-lived branches from `main` and integrate them through pull requests with passing checks and squash merges.
+- Perform routine sequential work in this repository folder on a local branch. Keep the primary checkout as the default workspace.
+- Use a worktree only for a complex task that genuinely requires isolation, such as concurrent branches, parallel agents, or protecting unrelated in-progress work. Explain the need and obtain owner approval before creating one.
 - Use conventional commit and pull request titles.
 - Preserve unrelated and untracked files. Stage only files required by the current task.
 
