@@ -8,9 +8,9 @@ publication.
 
 | Pull request | Deterministic floor | AI judgment | Final tier |
 | --- | --- | --- | --- |
-| [#17 LOW](https://github.com/jdavault/risk-based-pr-attention-routing/pull/17) | LOW | LOW | **LOW** |
-| [#18 MEDIUM](https://github.com/jdavault/risk-based-pr-attention-routing/pull/18) | MEDIUM | MEDIUM | **MEDIUM** |
-| [#19 HIGH](https://github.com/jdavault/risk-based-pr-attention-routing/pull/19) | HIGH | HIGH | **HIGH** |
+| [#17 LOW](https://github.com/p3sg/risk-based-pr-attention-routing/pull/17) | LOW | LOW | **LOW** |
+| [#18 MEDIUM](https://github.com/p3sg/risk-based-pr-attention-routing/pull/18) | MEDIUM | MEDIUM | **MEDIUM** |
+| [#19 HIGH](https://github.com/p3sg/risk-based-pr-attention-routing/pull/19) | HIGH | HIGH | **HIGH** |
 
 ## Notification evidence
 
@@ -48,7 +48,7 @@ team channel, using the same compact notification contract.
 
 **Result:** `max(LOW floor, LOW AI) = LOW`
 
-[Workflow run](https://github.com/jdavault/risk-based-pr-attention-routing/actions/runs/37323191893)
+[Workflow run](https://github.com/p3sg/risk-based-pr-attention-routing/actions/runs/37323191893)
 
 ## PR #18 — MEDIUM
 
@@ -70,7 +70,7 @@ team channel, using the same compact notification contract.
 
 **Result:** `max(MEDIUM floor, MEDIUM AI) = MEDIUM`
 
-[Workflow run](https://github.com/jdavault/risk-based-pr-attention-routing/actions/runs/37323398441)
+[Workflow run](https://github.com/p3sg/risk-based-pr-attention-routing/actions/runs/37323398441)
 
 ## PR #19 — HIGH
 
@@ -92,7 +92,7 @@ team channel, using the same compact notification contract.
 
 **Result:** `max(HIGH floor, HIGH AI) = HIGH`
 
-[Workflow run](https://github.com/jdavault/risk-based-pr-attention-routing/actions/runs/37323577674)
+[Workflow run](https://github.com/p3sg/risk-based-pr-attention-routing/actions/runs/37323577674)
 
 ## Outcome
 
